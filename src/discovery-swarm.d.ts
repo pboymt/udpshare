@@ -1,9 +1,6 @@
-
-
 declare module "discovery-swarm" {
 
-    import { Stream } from "stream";
-
+    import { Socket } from "dgram";
 
     function swarm(opt?: SwarmOptions) {
         return new Swarm(opt);
@@ -11,7 +8,7 @@ declare module "discovery-swarm" {
 
     export interface SwarmOptions {
         id: string; // peer-id for user
-        stream: Stream; // stream to replicate across peers
+        stream: Socket; // stream to replicate across peers
         connect: Function; // connect local and remote streams yourself
         utp: boolean; // use utp for discovery
         tcp: boolean; // use tcp for discovery
@@ -69,15 +66,15 @@ declare module "discovery-swarm" {
 
         on(event: 'connect-failed', callback: (peer: SwarmPeer, details: { timedout: boolean }) => void);
 
-        on(event: 'handshaking', callback: (connection: Stream, info: SwarmInfo) => void);
+        on(event: 'handshaking', callback: (connection: Socket, info: SwarmInfo) => void);
 
-        on(event: 'handshake-timeout', callback: (connection: Stream, info: SwarmInfo) => void);
+        on(event: 'handshake-timeout', callback: (connection: Socket, info: SwarmInfo) => void);
 
-        on(event: 'connection', callback: (connection: Stream, info: SwarmInfo) => void);
+        on(event: 'connection', callback: (connection: Socket, info: SwarmInfo) => void);
 
-        on(event: 'connection-closed', callback: (connection: Stream, info: SwarmInfo) => void);
+        on(event: 'connection-closed', callback: (connection: Socket, info: SwarmInfo) => void);
 
-        on(event: 'redundant-connection', callback: (connection: Stream, info: SwarmInfo) => void);
+        on(event: 'redundant-connection', callback: (connection: Socket, info: SwarmInfo) => void);
 
         listen(port: number);
 
