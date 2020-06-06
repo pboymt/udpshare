@@ -1,0 +1,19 @@
+{
+  "name": "udpshare",
+  "version": "0.0.1",
+  "description": "file share over LAN by udp protocol.",
+  "main": "lib/index.js",
+  "author": "pboymt",
+  "license": "MIT",
+  "scripts": {
+    "start": "node lib/index",
+    "client": "node lib/client"
+  },
+  "devDependencies": {
+    "@types/node": "^14.0.11",
+    "typescript": "^3.9.5"
+  },
+  "dependencies": {
+    "discovery-swarm": "^6.1.0"
+  }
+}
