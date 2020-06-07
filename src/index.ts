@@ -21,15 +21,24 @@ socket4.on('listening', () => {
     socket4.setBroadcast(true);
     socket4.setMulticastTTL(128);
     socket4.addMembership(multicast_ip);
-    setInterval(send_msg, 3000);
+    if (process.argv.includes('--server')) {
+        setInterval(send_msg, 3000);
+    }
 });
 
 socket4.on('message', (msg, rinfo) => {
     if (local_ip_filter(rinfo.address)) {
         console.log(`{${rinfo.address}:${rinfo.port}}:\t${msg}`);
+    } else {
+        console.log(`{${rinfo.address}:${rinfo.port}}:\t${msg}`);
     }
 });
-socket4.bind(6733);
+
+if (process.argv.includes('--server')) {
+    socket4.bind();
+} else {
+    socket4.bind(6733);
+}
 
 function local_ip_filter(address: string) {
     const ifaces = networkInterfaces();
