@@ -1,24 +1,54 @@
-import swarm from "discovery-swarm";
+import { createSocket } from "dgram";
+import { randomBytes } from 'crypto';
+import { networkInterfaces } from "os";
 
-var sw = swarm();
+const socket4 = createSocket('udp4');
+const id = randomBytes(8).toString('hex');
+console.log(`Your ID:\t${id}`);
 
-sw.join('updshare') // can be any id/name/hash
+const multicast_ip = '225.0.0.100';
 
-sw.on('connection', function (connection) {
-    // console.log(connection);
-    console.log('found + connected to peer');
-    connection.on('message', (msg) => {
-        console.log(msg);
-    });
-    connection.send('test');
+socket4.on('close', () => {
+    console.log('client closed');
 });
 
-sw.on('peer-banned', (peer, details) => {
-    console.log('banned', JSON.stringify(peer), JSON.stringify(details));
+socket4.on('error', (err) => {
+    console.log('client error' + err);
 });
 
-sw.on('peer-rejected', (peer, details) => {
-    console.log('rejected', JSON.stringify(peer), JSON.stringify(details));
+socket4.on('listening', () => {
+    console.log('client listening...');
+    socket4.setBroadcast(true);
+    socket4.setMulticastTTL(128);
+    socket4.addMembership(multicast_ip);
+    setInterval(send_msg, 3000);
 });
 
-sw.listen(8872);
+socket4.on('message', (msg, rinfo) => {
+    if (local_ip_filter(rinfo.address)) {
+        console.log(`{${rinfo.address}:${rinfo.port}}:\t${msg}`);
+    }
+});
+socket4.bind(6733);
+
+function local_ip_filter(address: string) {
+    const ifaces = networkInterfaces();
+    for (const ifname in ifaces) {
+        if (ifaces.hasOwnProperty(ifname)) {
+            const iface = ifaces[ifname];
+            if (iface) {
+                for (const info of iface) {
+                    if (address === info.address) {
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+    return true;
+}
+
+function send_msg() {
+    // console.log('send msg');
+    socket4.send(id, 6733, multicast_ip);
+}
