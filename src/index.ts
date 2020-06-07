@@ -1,63 +1,72 @@
-import { createSocket } from "dgram";
-import { randomBytes } from 'crypto';
-import { networkInterfaces } from "os";
+import multicastdns from 'multicast-dns';
+import { networkInterfaces } from 'os';
 
-const socket4 = createSocket('udp4');
-const id = randomBytes(8).toString('hex');
-console.log(`Your ID:\t${id}`);
+const mdns = multicastdns();
 
-const multicast_ip = '225.0.0.100';
+// if (process.argv.includes('--client')) {
+//     mdns.on('response', (packet, rinfo) => {
+//         console.log(packet, rinfo);
+//     });
+//     mdns.query({
+//         questions: [{
+//             name: 'brunhilde.local',
+//             type: 'A'
+//         }]
+//     });
+// } else {
+//     mdns.on('query', (packet, rinfo) => {
 
-socket4.on('close', () => {
-    console.log('client closed');
-});
+//     });
+// }
 
-socket4.on('error', (err) => {
-    console.log('client error' + err);
-});
+if (process.argv.includes('--client')) {
 
-socket4.on('listening', () => {
-    console.log('client listening...');
-    socket4.setBroadcast(true);
-    socket4.setMulticastTTL(128);
-    socket4.addMembership(multicast_ip);
-    if (process.argv.includes('--server')) {
-        setInterval(send_msg, 3000);
-    }
-});
+    mdns.on('response', function (response, rinfo) {
+        console.log('got a response packet:', response, rinfo)
+    })
 
-socket4.on('message', (msg, rinfo) => {
-    if (local_ip_filter(rinfo.address)) {
-        console.log(`{${rinfo.address}:${rinfo.port}}:\t${msg}`);
-    } else {
-        console.log(`{${rinfo.address}:${rinfo.port}}:\t${msg}`);
-    }
-});
+    mdns.query({
+        questions: [{
+            name: 'share.pboymt.local',
+            type: 'A'
+        }]
+    })
 
-if (process.argv.includes('--server')) {
-    socket4.bind();
 } else {
-    socket4.bind(6733);
-}
 
-function local_ip_filter(address: string) {
+    mdns.on('query', function (query, rinfo) {
+        console.log('got a query packet:', query, rinfo)
+
+    })
+
     const ifaces = networkInterfaces();
-    for (const ifname in ifaces) {
-        if (ifaces.hasOwnProperty(ifname)) {
-            const iface = ifaces[ifname];
-            if (iface) {
-                for (const info of iface) {
-                    if (address === info.address) {
-                        return false;
+    const lan_ips: string[] = [];
+
+    for (const iface in ifaces) {
+        if (ifaces.hasOwnProperty(iface)) {
+            const infos = ifaces[iface];
+            if (infos) {
+                for (const info of infos) {
+                    if (!info.internal && !['255.255.255.255', 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff'].includes(info.netmask)) {
+                        lan_ips.push(info.address);
                     }
                 }
             }
         }
     }
-    return true;
+
+    mdns.respond({
+        answers: lan_ips.map(ip => {
+            return {
+                name: 'share.pboymt.local',
+                type: 'A',
+                data: ip
+            }
+        })
+    })
 }
 
-function send_msg() {
-    // console.log('send msg');
-    socket4.send(id, 6733, multicast_ip);
-}
+
+
+// lets query for an A record for 'brunhilde.local'
+
